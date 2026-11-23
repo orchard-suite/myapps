@@ -1,0 +1,46 @@
+{{define "title"}}Requests · {{.Org}}{{end}}
+{{define "content"}}
+<div class="reqs">
+<h1>Requests</h1>
+{{if .Viewing}}
+<p class="empty">Requests belong to the person who sent them. They are not shown while you view as someone else.</p>
+{{else}}
+<p class="sub">Tell us what went wrong in an app, or what you want changed. You get one answer back, here.</p>
+{{if .Sent}}<div class="banner ok" role="status"><strong>Sent.</strong> It is in your list below. Come back here for the answer.</div>{{end}}
+<section class="card reqform" aria-labelledby="req-new">
+  <h2 id="req-new">Report a problem or ask for a change</h2>
+  {{if .Apps}}
+  {{with .Form.Error}}<p class="reqerr" role="alert">{{.}}</p>{{end}}
+  <form method="post" action="/requests">
+    <label for="req-app">Which app</label>
+    <select id="req-app" name="app" required>
+      <option value=""{{if not .Form.App}} selected{{end}} disabled>Pick an app</option>
+      {{range .Apps}}<option value="{{.Key}}"{{if eq .Key $.Form.App}} selected{{end}}>{{.Title}}</option>{{end}}
+    </select>
+    <label for="req-text">What happened, or what do you want</label>
+    <textarea id="req-text" name="text" rows="7" required minlength="10" maxlength="16000" placeholder="What you did, what you saw, and what you expected.">{{.Form.Text}}</textarea>
+    <p class="reqnote">Never write a password or a key here. We send your sign-in address and the app's address with your words.</p>
+    <button type="submit" class="button">Send</button>
+  </form>
+  {{else}}
+  <p class="reqnone">None of your apps takes requests here yet.</p>
+  {{end}}
+</section>
+<section class="reqmine" id="mine" aria-labelledby="req-mine">
+  <h2 id="req-mine">My requests{{if .Mine}}<span class="dim">{{len .Mine}}</span>{{end}}</h2>
+  {{if .ListFailed}}<div class="banner" role="status"><strong>Your requests could not be read.</strong> The request desk did not answer. Try again in a minute.</div>
+  {{else if not .Mine}}<p class="reqnone">You have sent nothing yet.</p>{{end}}
+  <ol class="reqlist">
+  {{range .Mine}}
+    <li class="req" data-request="{{.ID}}">
+      <h3>{{.Heading}}</h3>
+      <p class="reqmeta"><span class="rstate {{.Status.Tone}}">{{.Status.Words}}</span>{{with .About}}<span>{{.}}</span>{{end}}{{if not .CreatedAt.IsZero}}<time datetime="{{.CreatedAt.Format "2006-01-02T15:04:05Z07:00"}}">{{.CreatedAt.Format "2 Jan 2006"}}</time>{{end}}</p>
+      {{with .Answer}}<p class="ranswer">{{.}}</p>{{end}}
+      {{with .Ticket}}{{if .URL}}<p class="rticket"><a href="{{.URL}}" target="_blank" rel="noopener">See the ticket{{if .Number}} (number {{.Number}}){{end}}</a></p>{{end}}{{end}}
+    </li>
+  {{end}}
+  </ol>
+</section>
+{{end}}
+</div>
+{{end}}

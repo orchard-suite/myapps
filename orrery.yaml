@@ -1,0 +1,20 @@
+# What this repository builds: the service, the APIs it provides, and the
+# APIs it calls. redgreen reads this file from the repository and writes the
+# service for the estate that reads this repository; the app itself never
+# reads it. `fields` and `relations` place it in an estate's platform
+# pillars (plat_pillar); an API key is the providing service's key and its id.
+service: github/orchard-suite/myapps/cmd/myapps
+icon:
+  name: myapps
+  file: internal/server/assets/icon.svg
+fields:
+  category: Portal
+relations:
+  pillars:
+  - platform/product
+  - platform/catalog
+  - platform/actions
+consumes:
+- github/orchard-suite/orrery/actions
+- github/orchard-suite/orrery/catalog
+- github/orchard-suite/graft/cmd/graft/requests

@@ -1,0 +1,191 @@
+{{define "title"}}Admin · {{.Org}} · My Apps{{end}}
+{{define "content"}}
+<nav class="lenses" aria-label="Admin">
+  {{if .Admin}}<a href="/admin" {{if eq .Tab "apps"}}aria-current="page"{{end}}>Applications</a>
+  <a href="/admin/capabilities" {{if eq .Tab "capabilities"}}aria-current="page"{{end}}>Capabilities</a>
+  <a href="/admin/sources" {{if eq .Tab "sources"}}aria-current="page"{{end}}>Sources</a>{{end}}
+  <a href="/admin/lenses" {{if eq .Tab "lenses"}}aria-current="page"{{end}}>Lenses</a>
+</nav>
+{{if .Catalog.Error}}<div class="banner" role="status"><strong>Catalog unreachable.</strong> This is as it was{{if .Catalog.Fetched}} at {{template "clock" .Catalog.Fetched}}{{end}}.</div>{{end}}
+{{if not .Writable}}<div class="banner" role="status"><strong>Changes are off.</strong> This portal has no push token or no public address, so it can show this but not save it.</div>{{end}}
+{{with .Failed}}<div class="banner" role="status"><strong>{{.}} not saved.</strong> Orrery refused or could not be reached. The log says why. Try again.</div>{{else}}{{with .Done}}{{if ne . "0"}}<div class="banner ok" role="status">Saved {{.}}.</div>{{end}}{{end}}{{end}}
+{{if eq .Tab "apps"}}{{template "apps" .}}{{else if eq .Tab "capabilities"}}{{template "capabilities" .}}{{else if eq .Tab "sources"}}{{template "sources" .}}{{else}}{{template "lenses" .}}{{end}}
+{{end}}
+
+{{define "apps"}}
+<h1 class="sr">Applications</h1>
+<div class="apane">
+  <div class="abar">
+    <nav class="lenses sheets" aria-label="Which applications">
+      <a href="/admin" {{if ne .Sheet "waiting"}}aria-current="page"{{end}} title="The applications people have, in one grid">Added<span class="n" id="apps-count">{{len .Applications}}</span></a>
+      <a href="/admin?sheet=waiting" {{if eq .Sheet "waiting"}}aria-current="page"{{end}} title="What the sources found that is not an application yet">Waiting<span class="n">{{len .Suggestions}}</span></a>
+    </nav>
+    {{if ne .Sheet "waiting"}}
+    <div class="gtools" id="grid-tools" hidden>
+      <label class="search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg>
+        <input type="search" id="grid-search" placeholder="Search applications" autocomplete="off" aria-label="Search applications">
+      </label>
+      <span class="count" id="grid-count" aria-live="polite"></span>
+      <button type="button" class="button ghost small" id="grid-clear" hidden>Clear filters</button>
+      <details class="rowmenu gcols">
+        <summary class="button ghost small">Columns<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4"/></svg></summary>
+        <div class="rowpop" id="grid-columns"></div>
+      </details>
+      {{if .Writable}}
+      <form class="gadd" id="grid-add" method="post" action="/admin/applications">
+        <label class="search"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><input name="name" required maxlength="80" placeholder="Add an application" aria-label="New application's name" autocomplete="off"></label>
+        <button class="button small">Add</button>
+      </form>
+      {{end}}
+    </div>
+    {{else if and .Writable .Suggestions}}
+    <form class="bulk" id="bulk-suggest" method="post" action="/admin/suggestions/add"><label class="pick"><input type="checkbox" data-all="suggest" aria-label="Select every suggestion"> All</label>{{if .Tree}}<select name="capability" aria-label="Business capability for the new applications"><option value="">No capability yet</option>{{range .Tree}}<option value="{{.Category.Key}}">{{if .Depth}}{{range $i := indentDots .Depth}}· {{end}}{{end}}{{.Category.Name}}</option>{{end}}</select>{{end}}<button class="button small" data-bulk>Make applications</button><button class="button ghost small" data-bulk formaction="/admin/suggestions/ignore">Dismiss</button></form>
+    {{end}}
+  </div>
+  {{if ne .Sheet "waiting"}}
+  <div class="gwrap" id="grid" data-writable="{{.Writable}}"><noscript><p class="qnone">The grid needs JavaScript.</p></noscript></div>
+  <p class="gstatus" id="grid-status" role="status" aria-live="polite">{{if .Writable}}Click a cell to change it. It saves as soon as you pick or press Enter; Esc puts it back. A header sorts its column and lists every value it holds.{{else}}A header sorts its column and lists every value it holds.{{end}}</p>
+  <script type="application/json" id="grid-data">{{.Grid}}</script>
+  <script src="/assets/grid.js?v={{.Version}}" defer></script>
+  {{else}}
+  <div class="wlist">
+  {{if .Suggestions}}
+  <p class="sub">Found by the sources, with no application yet. Make one an application, attach it to one, or dismiss it. Pick several to do it at once.</p>
+  {{range $grp := groupSuggestions .Suggestions}}
+  <h3 class="qgroup">{{.Kind.Heading}}<span class="dim">{{len .Items}}</span></h3>
+  <ul class="qlist">
+  {{range $g := .Items}}
+    <li class="qrow" data-search="{{.Name}} {{host .URL}} {{.About}}" style="--hue:{{hue .Key}}">
+      <div class="qhead">
+        {{if $.Writable}}<input type="checkbox" name="ref" value="{{.Ref}}" form="bulk-suggest" data-pick="suggest" aria-label="Select {{.Name}}">{{end}}
+        <span class="logo sm">{{with icon .Icon "light"}}<picture>{{with icon $g.Icon "dark"}}<source media="(prefers-color-scheme: dark)" srcset="{{.}}">{{end}}<img src="{{.}}" alt="" width="36" height="36" decoding="async" data-initial="{{initial $g.Name}}"></picture>{{else}}<span class="mono" aria-hidden="true">{{initial .Name}}</span>{{end}}</span>
+        <div class="qname"><strong>{{.Name}}</strong>
+          <span class="qmeta">{{with .Portal}}<a class="chip link" href="{{.}}" rel="noopener" target="_blank">Open in Entra ↗</a>{{end}}{{with .URL}}<span class="host">{{host .}}</span>{{end}}{{with .About}}<span class="about">{{.}}</span>{{end}}{{if .Required}}<span>assignment required</span>{{end}}</span>
+        </div>
+      </div>
+      {{if $.Writable}}
+      <details class="rowmenu">
+        <summary class="button ghost small" aria-label="Add {{.Name}}">Add<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4"/></svg></summary>
+        <div class="rowpop">
+          <form class="rowone" method="post" action="/admin/suggestions/add"><input type="hidden" name="ref" value="{{.Ref}}"><button class="button small">Make it a new application</button></form>
+          {{if $.Applications}}<form method="post" action="/admin/suggestions/attach"><input type="hidden" name="ref" value="{{.Ref}}"><label>Or attach it to<select name="application" aria-label="Attach {{.Name}} to" required><option value="" disabled selected>An application…</option>{{range $.Applications}}<option value="{{.Key}}">{{.Name}}</option>{{end}}</select></label><button class="button ghost small">Attach</button></form>{{end}}
+        </div>
+      </details>
+      {{end}}
+    </li>
+  {{end}}
+  </ul>
+  {{end}}
+  {{else}}<p class="empty">Nothing waits. When the sources find an Entra app, a workload, an open-source service, or an outside product that no application has, it shows here.</p>{{end}}
+  </div>
+  {{end}}
+</div>
+{{end}}
+
+{{define "capabilities"}}
+<div class="atop">
+  <h1>Business capabilities</h1>
+  <p class="lead">What the organization does, such as Finance or Shipping. Home and the Landscape group apps by these. Rename one freely: apps stay on it.</p>
+</div>
+{{if .Writable}}
+<form class="card capadd" method="post" action="/admin/capabilities">
+  <h2>Add a capability</h2>
+  <label>Name <input name="name" required maxlength="80" placeholder="Finance"></label>
+  <label>Part of
+    <select name="parent"><option value="">Nothing: a top capability</option>{{range .Tree}}<option value="{{.Category.Key}}">{{if .Depth}}{{range $i := indentDots .Depth}}· {{end}}{{end}}{{.Category.Name}}</option>{{end}}</select>
+  </label>
+  <label>Description <input name="description" maxlength="200" placeholder="Optional"></label>
+  <p class="links"><button class="button">Add</button></p>
+</form>
+{{end}}
+{{if .Tree}}
+<ul class="qlist captree">
+{{range $row := .Tree}}{{$c := $row.Category}}
+  <li class="qrow" style="padding-left:{{add 14 (indent $row.Depth)}}px">
+    <div class="qhead">
+      <div class="qname"><strong>{{$c.Name}}</strong> <span class="dim">{{index $.Used $c.Key}} {{if eq (index $.Used $c.Key) 1}}app{{else}}apps{{end}}</span>{{with $c.Description}}<span class="qmeta">{{.}}</span>{{end}}</div>
+    </div>
+    {{if $.Writable}}
+    <details class="qedit">
+      <summary>Edit</summary>
+      <form method="post" action="/admin/capabilities/{{$c.Key}}">
+        <label>Name <input name="name" value="{{$c.Name}}" required maxlength="80"></label>
+        <label>Part of
+          <select name="parent"><option value="">Nothing: a top capability</option>{{range $.Tree}}{{if ne .Category.Key $c.Key}}<option value="{{.Category.Key}}" {{if eq .Category.Key $c.Parent}}selected{{end}}>{{.Category.Name}}</option>{{end}}{{end}}</select>
+        </label>
+        <label>Order <input name="order" type="number" min="1" value="{{$c.Order}}"></label>
+        <label>Description <input name="description" value="{{$c.Description}}" maxlength="200"></label>
+        <p class="links"><button class="button">Save</button></p>
+      </form>
+      <form method="post" action="/admin/capabilities/{{$c.Key}}/delete"><button class="button ghost">Remove</button></form>
+    </details>
+    {{end}}
+  </li>
+{{end}}
+</ul>
+{{else}}
+<p class="empty">No capabilities yet. Until there are, Home shows every app in one grid.</p>
+{{end}}
+{{end}}
+
+{{define "lenses"}}
+<div class="atop">
+  <h1>Lenses</h1>
+  <p class="lead">The classifications Analytics measures. Business capabilities always come first. Add any other, such as a department's pillars, to see how the apps cover it.</p>
+</div>
+<ul class="qlist">
+{{range .Lenses}}
+  <li class="qrow lensrow"><div class="qhead"><div class="qname"><strong>{{.Title}}</strong><span class="qmeta"><span><code>{{.Blueprint}}</code></span>{{if eq .Blueprint "business_capability"}}<span>Always first</span>{{end}}</span></div>
+    <a class="qlink" href="/analytics?lens={{.Blueprint}}">Open analytics</a>
+    {{if and $.Writable (ne .Blueprint "business_capability")}}<form method="post" action="/admin/lenses/{{.Blueprint}}/delete"><button class="button ghost small">Remove</button></form>{{end}}
+  </div></li>
+{{end}}
+</ul>
+{{if .Writable}}
+{{if .Candidates}}
+<form class="card capadd" method="post" action="/admin/lenses">
+  <h2>Add a lens</h2>
+  <label>Classification
+    <select name="blueprint" required>{{range .Candidates}}<option value="{{.ID}}">{{.Title}} ({{.ID}})</option>{{end}}</select>
+  </label>
+  <p class="links"><button class="button">Add</button></p>
+</form>
+{{else}}<p class="dim">Every classification in the hub is already a lens. A classification is a blueprint whose entities carry an order.</p>{{end}}
+{{end}}
+{{end}}
+
+
+{{define "sources"}}
+<div class="atop">
+  <h1>Sources</h1>
+  <p class="lead">Where My Apps reads each kind of thing in this hub. Pick the blueprint and save; then pick which of its fields and relations carry each part. A part left at None is not read.</p>
+</div>
+<div class="srcs">
+{{range $m := .Mappings}}
+<form class="card src" method="post" action="/admin/sources/{{$m.Spec.Kind}}">
+  <h2>{{$m.Spec.Title}}</h2>
+  <p class="dim">{{$m.Spec.About}}</p>
+  <label>Blueprint
+    <select name="blueprint"{{if not $.Writable}} disabled{{end}}>
+      <option value=""{{if not $m.Blueprint}} selected{{end}}>{{if $m.Spec.Optional}}On the Entra apps{{else}}Not read{{end}}</option>
+      {{range $.Blueprints}}<option value="{{.ID}}"{{if eq .ID $m.Blueprint}} selected{{end}}>{{or .Title .ID}} ({{.ID}})</option>{{end}}
+    </select>
+  </label>
+  {{if or $m.Blueprint $m.OnApps}}{{range $p := $m.Parts}}
+  <div class="srcpart">
+    <label>{{$p.Part.Title}}{{if $p.Part.Relation}} <span class="dim">relation</span>{{end}}
+      <select name="part.{{$p.Part.Name}}"{{if not $.Writable}} disabled{{end}}>
+        <option value=""{{if not $p.Name}} selected{{end}}>None</option>
+        {{range $p.Options}}<option{{if eq . $p.Name}} selected{{end}}>{{.}}</option>{{end}}
+      </select>
+    </label>
+    {{range $p.Values}}<label class="srcval">Its value for {{.Value}}<input name="value.{{$p.Part.Name}}.{{.Value}}" value="{{.Hub}}" autocomplete="off" spellcheck="false"{{if not $.Writable}} disabled{{end}}></label>{{end}}
+    {{with $p.Part.About}}<p class="dim">{{.}}</p>{{end}}
+  </div>
+  {{end}}{{end}}
+  {{if $.Writable}}<p class="links"><button class="button small">Save {{$m.Spec.Title}}</button></p>{{end}}
+</form>
+{{end}}
+</div>
+{{end}}

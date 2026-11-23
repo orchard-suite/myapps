@@ -1,0 +1,55 @@
+{
+  "pillars": {"entities": [
+    {"blueprint": "plat_pillar", "key": "catalog", "title": "Catalog and ownership", "state": "active",
+     "fields": {"order": 2, "description": " What exists and who owns it. "}},
+    {"blueprint": "plat_pillar", "key": "product", "title": "Platform as a product", "state": "active",
+     "fields": {"order": 1, "description": "The platform, run like a product."}},
+    {"blueprint": "plat_pillar", "key": "cost", "title": "Cost", "state": "active", "fields": {}},
+    {"blueprint": "plat_pillar", "key": "agents", "title": "Agents", "state": "active", "fields": {"order": 3}},
+    {"blueprint": "plat_pillar", "key": "ghost", "title": "Ghost", "hidden": true, "state": "active", "fields": {"order": 0}}
+  ]},
+  "services": {"entities": [
+    {"blueprint": "sw_service", "key": "git/example/atlas", "title": "Atlas", "icon": "layers", "state": "active",
+     "fields": {"origin": "built", "category": "Catalog and inventory", "description": " One graph of what exists. ",
+                "lifecycle": "production", "repository_url": "https://git.example.com/atlas"},
+     "relations": {
+       "pillars": [{"blueprint": "plat_pillar", "key": "agents"}, {"blueprint": "plat_pillar", "key": "catalog"}, {"blueprint": "plat_pillar", "key": "agents"}],
+       "consumes": [{"blueprint": "sw_api", "key": "git/example/beacon/alerts"}, {"blueprint": "sw_api", "key": "comet"}, {"blueprint": "sw_api", "key": "nowhere"}],
+       "will_consume": [{"blueprint": "sw_api", "key": "nimbus"}]},
+     "status": {"level": "green", "reasons": []}},
+    {"blueprint": "sw_service", "key": "git/example/beacon", "title": "Beacon", "icon": "beacon", "state": "active",
+     "fields": {"origin": "adopted", "category": "Incidents", "lifecycle": "development", "description": "The incident desk."},
+     "relations": {"pillars": [{"blueprint": "plat_pillar", "key": "product"}]},
+     "status": {"level": "amber", "reasons": ["one alert firing"]}},
+    {"blueprint": "sw_service", "key": "git/example/ember", "state": "missing",
+     "fields": {"origin": "built", "lifecycle": "development"},
+     "relations": {"pillars": [{"blueprint": "plat_pillar", "key": "made-up"}],
+                   "consumes": [{"blueprint": "sw_api", "key": "git/example/atlas/catalog"}]},
+     "status": {"level": "green"}},
+    {"blueprint": "sw_service", "key": "git/example/plain", "title": "Plain", "state": "active",
+     "fields": {"origin": null},
+     "relations": {"pillars": [{"blueprint": "plat_pillar", "key": "catalog"}],
+                   "consumes": [{"blueprint": "sw_api", "key": "git/example/atlas/catalog"}]},
+     "status": {"level": "green"}},
+    {"blueprint": "sw_service", "key": "git/example/loose", "title": "Loose", "state": "active",
+     "fields": {"origin": "built"}, "relations": {"pillars": []}, "status": {"level": "green"}},
+    {"blueprint": "sw_service", "key": "git/example/ghost", "title": "Ghost", "hidden": true, "state": "active",
+     "fields": {"origin": "built"}, "relations": {"pillars": [{"blueprint": "plat_pillar", "key": "catalog"}]}, "status": {"level": "green"}}
+  ]},
+  "apis": {"entities": [
+    {"blueprint": "sw_api", "key": "git/example/atlas/catalog", "title": "Atlas catalog API", "state": "active",
+     "fields": {"external": false, "kind": "rest"},
+     "relations": {"service": [{"blueprint": "sw_service", "key": "git/example/atlas"}]}, "status": {"level": "green"}},
+    {"blueprint": "sw_api", "key": "git/example/beacon/alerts", "title": "Beacon alerts", "state": "active",
+     "fields": {"external": false},
+     "relations": {"service": [{"blueprint": "sw_service", "key": "git/example/beacon"}]}, "status": {"level": "green"}},
+    {"blueprint": "sw_api", "key": "comet", "title": "Comet", "state": "active",
+     "fields": {"external": true, "category": "Spend", "lifecycle": "production", "tier": "Critical", "base_url": "https://api.comet.example.com", "description": "What things cost."},
+     "relations": {"pillars": [{"blueprint": "plat_pillar", "key": "cost"}]}, "status": {"level": null}},
+    {"blueprint": "sw_api", "key": "nimbus", "title": "Nimbus", "state": "active",
+     "fields": {"external": true, "category": "Models", "lifecycle": "development"},
+     "relations": {"pillars": [{"blueprint": "plat_pillar", "key": "agents"}]}, "status": {"level": "green"}},
+    {"blueprint": "sw_api", "key": "stray", "title": "Stray", "state": "active",
+     "fields": {"external": true}, "relations": {}, "status": {"level": "green"}}
+  ]}
+}

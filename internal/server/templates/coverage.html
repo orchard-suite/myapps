@@ -1,0 +1,265 @@
+{{define "title"}}{{.Org}} · Analytics{{end}}
+{{define "content"}}
+{{if .Catalog.Error}}
+<div class="banner" role="status"><strong>Catalog unreachable.</strong> {{if .Catalog.Fetched}}Showing the landscape as it was at {{template "clock" .Catalog.Fetched}}. Status dots may be out of date.{{else}}No landscape to show yet. Reload in a minute.{{end}}</div>
+{{end}}
+<div class="phead ahead">
+  <div>
+    <p class="eyebrow">Analytics</p>
+    <h1>{{.Lens.Title}}</h1>
+    <p class="lead">How the applications, services, and outside APIs cover each category of {{.Lens.Title}}. A count is not maturity; the strength is your assessment.</p>
+  </div>
+  <nav class="lenses" aria-label="Lens">{{range .Lenses}}<a href="/analytics?lens={{.Blueprint}}" {{if eq .Blueprint $.Lens.Blueprint}}aria-current="page"{{end}}>{{.Title}}</a>{{end}}{{if or .Admin .Platform}}<a class="add" href="/admin/lenses">+ Lens</a>{{end}}</nav>
+</div>
+{{with .Failed}}<div class="banner" role="status"><strong>Not saved.</strong> Orrery refused or could not be reached. Try again.</div>{{end}}
+{{$rated := false}}{{range .Ratings}}{{if .Current}}{{$rated = true}}{{end}}{{end}}
+<nav class="jump" aria-label="On this page"><a href="#ratings">Strength</a><a href="#findings">Findings</a>{{if .Count}}<a href="#views">Views</a>{{end}}</nav>
+<section class="abox" id="ratings">
+  <h2>Strength of each category</h2>
+  <p class="sub">Each logo is a card the catalog places on the category, edged by its kind. The strength is your assessment, from 1 to 5: what covers it today and what is missing. Each save is kept; the newest is current.{{if not $rated}} Nothing is assessed yet{{if .Writable}}: start with the busiest category{{end}}.{{end}}</p>
+  <p class="shead" aria-hidden="true"><span>Category</span><span>Strength</span><span class="skey">Cards{{range .Held}}<i class="kind-{{.Key}}"></i>{{.Label}}{{end}}</span></p>
+  <ol class="strength">
+  {{range .Ratings}}
+    <li class="srow">
+      <div class="sname"><strong>{{.Category.Name}}</strong><span class="dim">{{.Count}} {{if eq .Count 1}}card{{else}}cards{{end}}</span></div>
+      <div class="sval">{{with .Current}}{{$n := .Rating}}<span class="pips" title="{{.Rating}} of 5" aria-label="{{.Rating}} of 5">{{range $i := ratingSteps}}<i{{if le $i $n}} class="on"{{end}}></i>{{end}}</span>{{else}}<span class="pending">Not assessed</span>{{end}}</div>
+      <div class="slogos" title="{{.Category.Name}}: {{range $i, $k := .Kinds}}{{if $i}}, {{end}}{{$k.Count}} {{$k.Kind.Label}}{{else}}nothing placed{{end}}">{{$n := len .Cards}}{{range $i, $k := .Cards}}<button type="button" class="slogo kind-{{$k.Kind}}{{if ge $i 6}} past{{end}}" data-card="{{$k.Key}}" data-home="{{home $k.Categories}}" data-kind="{{$k.Kind}}" title="{{$k.Title}}, {{$k.LayerLabel}}" aria-label="{{$k.Title}}" style="--hue:{{hue $k.Key}}"><span class="logo sm">{{with icon $k.Icon "light"}}<picture>{{with icon $k.Icon "dark"}}<source media="(prefers-color-scheme: dark)" srcset="{{.}}">{{end}}<img src="{{.}}" alt="" decoding="async" data-initial="{{initial $k.Title}}"></picture>{{else}}<span class="mono" aria-hidden="true">{{initial $k.Title}}</span>{{end}}</span></button>{{end}}{{if gt $n 6}}<span class="smore">+{{add $n -6}}</span>{{end}}{{if not .Cards}}<span class="snone">Nothing placed</span>{{end}}</div>
+      {{if $.Writable}}<div class="sact">{{template "assess" (assessOf $.Lens.Blueprint .)}}</div>{{end}}
+      {{$earlier := .Earlier}}{{with .Current}}<p class="snote">{{with .Covers}}<span><b>Covers</b> {{.}}</span>{{end}}{{with .Missing}}<span><b>Missing</b> {{.}}</span>{{end}}<span class="dim">{{.By}}, {{template "day" .At}}{{if $earlier}} ({{$earlier}} before){{end}}</span></p>{{end}}
+    </li>
+  {{end}}
+  </ol>
+</section>
+<h2 class="ahd" id="findings">Findings</h2>
+<div class="breakdown">
+{{with .Overlap}}
+  <section class="abox">
+    <h2>Overlap</h2>
+    {{if .Shared}}<p class="sub">{{.Shared}} {{if eq .Shared 1}}card sits{{else}}cards sit{{end}} in more than one category. The pairs that share the most:</p>
+    <ul class="tally">{{range $i, $p := .Pairs}}{{if lt $i 8}}<li><span>{{$p.A.Name}} and {{$p.B.Name}}</span><b>{{$p.Count}}</b></li>{{end}}{{end}}</ul>
+    {{else}}<p class="ok-line"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>No card sits in more than one category.</p>{{end}}
+  </section>
+{{end}}
+{{with .Breakdown}}
+  <section class="abox"><h2>Apps by owning team</h2>{{if .NoTeams}}<p class="none">No app has an owning team yet.{{if $.Admin}} <a href="/admin">Set them in Admin</a>{{end}}</p>{{else if .ByTeam}}<ul class="tally">{{range .ByTeam}}<li><span>{{.Name}}</span><b>{{.Count}}</b></li>{{end}}</ul>{{else}}<p class="dim">No apps are shown yet.</p>{{end}}</section>
+  <section class="abox"><h2>Apps by who may open them</h2>{{if .ByAccess}}<ul class="tally">{{range .ByAccess}}<li><span>{{.Name}}</span><b>{{.Count}}</b></li>{{end}}</ul>{{else}}<p class="dim">No apps are shown yet.</p>{{end}}</section>
+  <section class="abox"><h2>Gaps</h2>
+    {{if .Empty}}<p class="sub">Categories nothing is placed on:</p><p>{{range $i, $c := .Empty}}{{if $i}}, {{end}}{{$c.Name}}{{end}}</p>{{end}}
+    {{if .Unplaced}}<p class="sub">Shown apps this lens does not place:</p><p>{{range $i, $t := .Unplaced}}{{if $i}}, {{end}}{{$t}}{{end}}</p>{{end}}
+    {{if and (not .Empty) (not .Unplaced)}}<p class="ok-line"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Every category has something, and every shown app is placed.</p>{{end}}
+  </section>
+{{end}}
+</div>
+{{if .Count}}
+<span id="views"></span>
+<div class="toolbar ltools" id="landscape">
+  <div class="tabs" role="tablist" aria-label="View">
+    {{$overlap := .Overlap.Shared}}<button type="button" role="tab" id="tab-grid" aria-selected="{{if $overlap}}false{{else}}true{{end}}" aria-controls="view-grid" data-view="grid">Wall</button>
+    <button type="button" role="tab" id="tab-matrix" aria-selected="{{if $overlap}}true{{else}}false{{end}}" aria-controls="view-matrix" data-view="matrix">Matrix</button>
+    <button type="button" role="tab" id="tab-analysis" aria-selected="false" aria-controls="view-analysis" data-view="analysis">Analysis</button>
+  </div>
+  <label class="search">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input type="search" id="lsearch" placeholder="Search cards" autocomplete="off" aria-label="Search cards">
+  </label>
+  <select id="f-origin" data-filter="origin" aria-label="Kind">
+    <option value="">Every kind</option>
+    {{range .Kinds}}<option value="{{.Key}}">{{.Label}}</option>{{end}}
+  </select>
+  <select id="f-adoption" data-filter="adoption" aria-label="Adoption">
+    <option value="">In use or planned</option>
+    {{range .Adoptions}}<option value="{{.Key}}">{{.Label}}</option>{{end}}
+  </select>
+  <div class="zoom" role="group" aria-label="Tile size">
+    <button type="button" data-zoom="-1" aria-label="Smaller cards" title="Smaller"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12"/></svg></button>
+    <button type="button" data-zoom="1" aria-label="Larger cards" title="Larger"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12M12 6v12"/></svg></button>
+  </div>
+  <span class="count" id="lcount" data-total="{{.Count}}">{{.Count}} {{if eq .Count 1}}card{{else}}cards{{end}}</span>
+</div>
+
+<div class="wall" id="view-grid" role="tabpanel" aria-labelledby="tab-grid"{{if .Overlap.Shared}} hidden{{end}}>
+  <aside class="lkey" aria-label="How to read the wall">
+    <h2>How to read it</h2>
+    <p class="lsum"><b>{{.Count}}</b> {{if eq .Count 1}}card{{else}}cards{{end}}: applications, services, and outside APIs, placed on {{.Lens.Title}}.</p>
+    <ul class="wkey">{{template "legend" .Legend}}<li class="planned"><i></i>Planned</li></ul>
+  </aside>
+{{range $col := .Columns}}
+  <section class="lcategory" data-category="{{$col.Category.Key}}">
+    <h2 title="{{$col.Category.Description}}"><span class="pname">{{$col.Category.Name}}</span><span class="dim">{{$col.Count}}</span></h2>
+    <div class="lboxes">
+    {{range .Boxes}}
+      <div class="lbox" style="--span:{{.Span}};--fit:{{.Fit}}">
+        {{with .Name}}<h3>{{.}}</h3>{{end}}
+        <div class="lcells">
+        {{range $c := .Cards}}
+          <button type="button" class="lcard {{$c.Size}}{{if $c.Has "built"}} ours{{end}}{{if eq $c.Adoption "planned"}} planned{{end}}" data-card="{{$c.Key}}" data-home="{{$col.Category.Key}}" data-origin="{{$c.KindKeys}}" data-kind="{{$c.Kind}}" data-adoption="{{$c.Adoption}}" data-search="{{$c.Title}} {{$c.Description}} {{$c.Category}} {{$c.Key}}" data-tip="{{$c.Label}}{{if and $c.Lifecycle (ne $c.Lifecycle "production") (ne $c.Adoption "planned")}}, {{$c.Lifecycle}}{{end}}" style="--hue:{{hue $c.Key}}">
+            <span class="logo">{{with icon $c.Icon "light"}}<picture>{{with icon $c.Icon "dark"}}<source media="(prefers-color-scheme: dark)" srcset="{{.}}">{{end}}<img src="{{.}}" alt="" decoding="async" data-initial="{{initial $c.Title}}"></picture>{{else}}<span class="mono" aria-hidden="true">{{initial $c.Title}}</span>{{end}}</span>
+            {{template "marks" $c}}<span class="lname">{{$c.Title}}</span><span class="lkind">{{$c.Label}}</span>
+            <span class="lstatus {{$c.Status}}" data-pdot title="{{statusText $c.Status $c.Reasons}}">{{statusWord $c.Status}}</span>
+          </button>
+        {{end}}
+        </div>
+      </div>
+    {{else}}
+      <p class="dim nothing">Nothing here yet.</p>
+    {{end}}
+    </div>
+  </section>
+{{end}}
+</div>
+
+<div class="mwrap" id="view-matrix" role="tabpanel" aria-labelledby="tab-matrix"{{if not .Overlap.Shared}} hidden{{end}}>
+  <table class="matrix">
+    <thead>
+      <tr><th scope="col" class="corner">Card</th>{{range .Matrix.Categories}}<th scope="col" title="{{.Name}}"><span>{{.Name}}</span></th>{{end}}</tr>
+    </thead>
+    {{range .Matrix.Groups}}
+    <tbody data-group="{{.Kind.Key}}">
+      <tr class="group"><th scope="rowgroup" colspan="{{len $.Matrix.Categories | inc}}">{{.Kind.Label}}</th></tr>
+      {{range .Rows}}{{$c := .Card}}
+      <tr class="mrow" data-row="{{.Card.Key}}" data-origin="{{.Card.KindKeys}}" data-adoption="{{.Card.Adoption}}" data-search="{{.Card.Title}} {{.Card.Description}} {{.Card.Category}} {{.Card.Key}}">
+        <th scope="row"><button type="button" class="mlink" data-card="{{.Card.Key}}" data-home="{{home .Card.Categories}}" data-kind="{{.Card.Kind}}" style="--hue:{{hue $c.Key}}"><span class="logo sm">{{with icon $c.Icon "light"}}<picture>{{with icon $c.Icon "dark"}}<source media="(prefers-color-scheme: dark)" srcset="{{.}}">{{end}}<img src="{{.}}" alt="" decoding="async" data-initial="{{initial $c.Title}}"></picture>{{else}}<span class="mono" aria-hidden="true">{{initial $c.Title}}</span>{{end}}</span>{{.Card.Title}}</button>{{if eq .Card.Adoption "planned"}} <span class="chip adoption">{{adoptionLabel .Card.Adoption}}</span>{{end}}</th>
+        {{range .Marks}}<td data-mark="{{.}}">{{if .}}<span class="mark {{.}}" title="{{markText .}}"><span class="sr">{{markText .}}</span></span>{{end}}</td>{{end}}
+      </tr>
+      {{end}}
+    </tbody>
+    {{end}}
+    <tfoot>
+      <tr><th scope="row">Serving each category</th>{{range .Matrix.Totals}}<td class="total{{if .Thin}} thin{{end}}" title="{{.Category.Name}}: {{.Count}} {{if eq .Count 1}}card serves it{{else}}cards serve it{{end}}{{if .Thin}}, fewer than two{{end}}">{{.Count}}</td>{{end}}</tr>
+    </tfoot>
+  </table>
+  <p class="legend"><span class="mark serves"></span> serves <span class="mark planned"></span> planned <span class="total thin">0</span> fewer than two cards</p>
+</div>
+
+{{with .Analysis}}{{$a := .}}
+<div class="analysis" id="view-analysis" role="tabpanel" aria-labelledby="tab-analysis" hidden>
+  <section class="abox radar-box">
+    <div class="rhead">
+      <h2>Coverage of {{$.Lens.Title}}</h2>
+      <p class="sub">{{if .Rows}}How many of the <span data-built>{{len .Rows}}</span> {{if eq (len .Rows) 1}}card{{else}}cards{{end}} built here are placed on each category. A count is not maturity: one that fits a category is enough.{{else}}Nothing on this lens is built here yet. This view counts what the organization writes itself, applications and services alike, and fills in as they are placed on its categories.{{end}}</p>
+    </div>
+    {{if and .Rows .Radar.Axes}}{{$r := .Radar}}
+    <div class="rbody">
+      <svg class="radar" viewBox="0 0 {{$r.Width}} {{$r.Height}}" role="img" aria-label="Apps per category">
+        {{range $r.Rings}}<polygon class="ring" points="{{.Points}}"/>{{end}}
+        {{range $r.Axes}}<line class="axis" x1="{{$r.Center.X}}" y1="{{$r.Center.Y}}" x2="{{.End.X}}" y2="{{.End.Y}}"/>{{end}}
+        <polygon class="area" points="{{$r.Area}}" data-area/>
+        {{range $i, $x := $r.Axes}}{{$c := index $a.Counts $i}}
+        <g class="spoke" data-axis="{{$i}}">
+          <text class="tag" x="{{$x.Tag.X}}" y="{{$x.Tag.Y}}" dy="4" text-anchor="middle">{{$c.Category.Order}}</text>
+          <text class="lbl" text-anchor="{{$x.Anchor}}">{{range $x.Lines}}<tspan x="{{.At.X}}" y="{{.At.Y}}">{{.Text}}</tspan>{{end}}</text>
+          <circle class="pt" cx="{{$x.At.Point.X}}" cy="{{$x.At.Point.Y}}" r="4.5" data-pt/>
+          <text class="num" x="{{$x.At.Number.X}}" y="{{$x.At.Number.Y}}" dy="4" text-anchor="middle" data-num>{{$x.Count}}</text>
+          <circle class="hit" cx="{{$x.At.Point.X}}" cy="{{$x.At.Point.Y}}" r="16" tabindex="0" role="button" aria-label="{{countTip $c}}" data-hit><title>{{countTip $c}}</title></circle>
+        </g>
+        {{end}}
+      </svg>
+      <script type="application/json" id="radar-tracks">{{$r.Tracks}}</script>
+      <ol class="rlist">
+        {{range $i, $c := .Counts}}
+        <li data-axis="{{$i}}" tabindex="0"><span class="n">{{$c.Category.Order}}</span><span class="rname">{{$c.Category.Name}}</span><span class="rcount" data-rcount>{{$c.Count}}</span><span class="rapps" data-rapps>{{range $j, $t := $c.Titles}}{{if $j}}, {{end}}{{$t}}{{else}}Nothing is placed on it.{{end}}</span></li>
+        {{end}}
+      </ol>
+    </div>
+    {{end}}
+  </section>
+
+  {{if .Rows}}
+  <section class="abox">
+    <h2>Every app, by category and by how it works with Orrery</h2>
+    <p class="sub">A dot is a category the app is placed on. A tick is something Orrery saw a source acting for the app do; point at one to see what.</p>
+    {{if not .Known}}<p class="anote" role="status"><strong>Integration unknown.</strong> Orrery's sources could not be read, or Orrery does not say yet what each one wrote. The categories are current.</p>{{end}}
+    <div class="awrap">
+      <table class="atable">
+        <thead>
+          <tr>
+            <th scope="col" class="app">App</th>
+            <th scope="col" class="role">Role</th>
+            {{range .Categories}}<th scope="col" class="slant" title="{{.Name}}"><span>{{.Name}}</span></th>{{end}}
+            {{range $i, $k := $.Integrations}}<th scope="col" class="slant im{{if not $i}} first{{end}}"><span>{{$k.Label}}</span></th>{{end}}
+          </tr>
+        </thead>
+        <tbody>
+        {{range .Rows}}{{$c := .Card}}
+          <tr class="arow" data-row="{{$c.Key}}" data-origin="{{$c.KindKeys}}" data-adoption="{{$c.Adoption}}" data-search="{{$c.Title}} {{$c.Description}} {{$c.Category}} {{$c.Key}}" style="--hue:{{hue $c.Key}}">
+            <th scope="row" class="app"><button type="button" class="alink" data-card="{{$c.Key}}" data-home="{{home $c.Categories}}" data-kind="{{$c.Kind}}"><span class="logo">{{with icon $c.Icon "light"}}<picture>{{with icon $c.Icon "dark"}}<source media="(prefers-color-scheme: dark)" srcset="{{.}}">{{end}}<img src="{{.}}" alt="" decoding="async" data-initial="{{initial $c.Title}}"></picture>{{else}}<span class="mono" aria-hidden="true">{{initial $c.Title}}</span>{{end}}</span><span class="aname">{{$c.Title}}</span></button></th>
+            <td class="role">{{$c.Category}}</td>
+            {{range $i, $on := .Dots}}{{$p := index $a.Categories $i}}<td data-dot="{{if $on}}on{{end}}" title="{{$c.Title}}{{if $on}} names {{else}} does not name {{end}}{{$p.Name}}">{{if $on}}<i class="d"></i>{{else}}<i class="o"></i>{{end}}</td>{{end}}
+            {{range $i, $m := .Marks}}<td class="im{{if not $i}} first{{end}}" data-im="{{if $m.On}}on{{end}}" title="{{markTip $c.Title $m}}">{{if $m.On}}<span class="tick"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 8.5 2.6 2.5L12 5.5"/></svg><span class="sr">{{$m.Kind.Label}}</span></span>{{else}}<i class="o"></i>{{end}}</td>
+            {{else}}{{range $i, $k := $.Integrations}}<td class="im unknown{{if not $i}} first{{end}}" title="{{$c.Title}}: {{$k.Label}} unknown">?</td>{{end}}{{end}}
+          </tr>
+        {{end}}
+          <tr class="anone" hidden><td colspan="{{add (len .Categories) 5}}">No app matches.</td></tr>
+        </tbody>
+        <tfoot>
+          <tr><th scope="row" class="app">Apps</th><td class="role"></td>{{range .Counts}}<td data-ccount title="{{countTip .}}">{{.Count}}</td>{{end}}{{range $i, $n := .MarkCounts}}<td class="im{{if not $i}} first{{end}}" data-mcount>{{if $a.Known}}{{$n}}{{else}}?{{end}}</td>{{end}}</tr>
+        </tfoot>
+      </table>
+    </div>
+    <dl class="alegend">
+      <div><dt>Data</dt><dd>It writes entities of any blueprint.</dd></div>
+      <div><dt>Blueprints</dt><dd>It offers at least one blueprint.</dd></div>
+      <div><dt>Actions</dt><dd>It puts at least one self-service action.</dd></div>
+    </dl>
+  </section>
+  {{end}}
+</div>
+{{end}}
+
+<p class="empty" id="lno-match" hidden>Nothing matches that.</p>
+
+{{range .Details}}{{$c := .Card}}
+<dialog class="sheet detail" id="detail-{{$c.Key}}" aria-labelledby="detail-{{$c.Key}}-title" style="--hue:{{hue $c.Key}}">
+  <form method="dialog"><button class="close" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></form>
+  <header>
+    <span class="logo xl">{{with icon $c.Icon "light"}}<picture>{{with icon $c.Icon "dark"}}<source media="(prefers-color-scheme: dark)" srcset="{{.}}">{{end}}<img src="{{.}}" alt="" decoding="async" data-initial="{{initial $c.Title}}"></picture>{{else}}<span class="mono" aria-hidden="true">{{initial $c.Title}}</span>{{end}}</span>
+    <div>
+      <h2 id="detail-{{$c.Key}}-title">{{$c.Title}}</h2>
+      <p class="status"><span class="dot {{$c.Status}}"></span>{{statusText $c.Status $c.Reasons}}</p>
+    </div>
+  </header>
+  {{if $c.Description}}<p class="ddesc">{{$c.Description}}</p>{{end}}
+  <dl class="facts">
+    <dt>Kind</dt><dd class="layers">{{template "layers" $c.Layers}}</dd>
+    <dt>Adoption</dt><dd>{{adoptionLabel $c.Adoption}}{{if and $c.Lifecycle (ne $c.Adoption "planned")}}, {{$c.Lifecycle}}{{end}}</dd>
+    {{if .Categories}}<dt>Serves</dt><dd>{{range $i, $x := .Categories}}{{if $i}}, {{end}}{{$x.Name}}{{end}}{{with $c.Category}} · {{.}}{{end}}</dd>{{end}}
+    <dt>Owner</dt><dd>{{with $c.Team}}{{.}}{{else}}<span class="dim">Not set</span>{{end}}</dd>
+  </dl>
+  {{if or $c.URL $c.Orrery}}
+  <p class="links">{{if $c.URL}}<a href="{{$c.URL}}" rel="noopener">{{if eq $c.Kind "saas"}}API address{{else}}Repository{{end}}</a>{{end}}{{if $c.Orrery}}<a href="{{$c.Orrery}}" rel="noopener">See it in Orrery</a>{{end}}</p>
+  {{end}}
+  {{if .Provides}}
+  <h3>Provides</h3>
+  <ul class="flows">{{range .Provides}}<li class="flow"><span class="peer">{{.Title}}</span></li>{{end}}</ul>
+  {{end}}
+  {{if ne $c.Kind "saas"}}
+  <h3>Consumes</h3>
+  <ul class="flows">
+  {{range .Consumes}}<li class="flow live"><span class="peer">{{.API}}</span><span class="carries">{{if .Provider}}from {{.Provider}}{{else}}outside{{end}}</span></li>
+  {{else}}<li class="dim">Calls nothing on the landscape.</li>{{end}}
+  </ul>
+  {{if .WillConsume}}
+  <h3>Will consume</h3>
+  <ul class="flows">{{range .WillConsume}}<li class="flow wanted"><span class="peer">{{.API}}</span><span class="carries">{{if .Provider}}from {{.Provider}}{{else}}outside{{end}}</span><span class="chip state">{{stateLabel .Edge.State}}</span></li>{{end}}</ul>
+  {{end}}
+  {{end}}
+  <h3>Consumed by</h3>
+  <ul class="flows">
+  {{range .ConsumedBy}}<li class="flow {{.Edge.State}}"><span class="peer">{{.Consumer}}</span><span class="carries">{{.API}}</span><span class="chip state">{{stateLabel .Edge.State}}</span></li>
+  {{else}}<li class="dim">Nobody on the landscape calls it.</li>{{end}}
+  </ul>
+</dialog>
+{{end}}
+{{else if not .Catalog.Error}}
+<p class="empty">Nothing is placed in {{.Lens.Title}} yet. Cards show here once shown apps, services with an origin, or outside APIs link to its categories.</p>
+{{end}}
+{{end}}
+
+{{define "assess"}}<details class="qedit"><summary>Assess<span class="for sr"> {{.Rating.Category.Name}}</span></summary>
+        <form method="post" action="/analytics/assess">
+          <input type="hidden" name="lens" value="{{.Lens}}"><input type="hidden" name="category" value="{{.Rating.Category.Key}}">
+          <fieldset class="qstates"><legend>Strength</legend>{{range $n := ratingSteps}}<label><input type="radio" name="rating" value="{{$n}}" required> {{$n}}</label>{{end}}</fieldset>
+          <label>What covers it <input name="covers" value="{{with .Rating.Current}}{{.Covers}}{{end}}" maxlength="400"></label>
+          <label>What is missing <input name="missing" value="{{with .Rating.Current}}{{.Missing}}{{end}}" maxlength="400"></label>
+          <p class="links"><button class="button">Save the assessment</button></p>
+        </form></details>{{end}}

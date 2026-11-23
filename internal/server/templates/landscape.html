@@ -1,0 +1,142 @@
+{{define "title"}}{{.Org}} · Landscape{{end}}
+{{define "content"}}
+{{if .Catalog.Error}}
+<div class="banner" role="status"><strong>Catalog unreachable.</strong> {{if .Catalog.Fetched}}Showing the landscape as it was at {{template "clock" .Catalog.Fetched}}. Status may be out of date.{{else}}No landscape to show yet. Reload in a minute.{{end}}</div>
+{{end}}
+<div class="phead">
+  <h1>The {{.Org}} landscape</h1>
+  <p class="lead">Every application the organization offers, placed by what it serves.</p>
+</div>
+{{if .Count}}
+<div class="toolbar ltools" id="landscape">
+  <div class="tabs" role="tablist" aria-label="View">
+    <button type="button" role="tab" id="tab-grid" aria-selected="true" aria-controls="view-grid" data-view="grid">Wall</button>
+    <button type="button" role="tab" id="tab-list" aria-selected="false" aria-controls="view-list" data-view="list">List</button>
+  </div>
+  <label class="search">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg>
+    <input type="search" id="lsearch" placeholder="Search the landscape" autocomplete="off" aria-label="Search the landscape">
+  </label>
+  <button type="button" class="ftoggle" data-filters aria-expanded="false" aria-controls="filters">Filters</button>
+  <div class="filters" id="filters">
+    <select id="f-origin" data-filter="origin" aria-label="Kind">
+      <option value="">Every kind</option>
+      {{range .Kinds}}<option value="{{.Key}}">{{.Label}}</option>{{end}}
+    </select>
+    <select id="f-adoption" data-filter="adoption" aria-label="Adoption">
+      <option value="">In use or planned</option>
+      {{range .Adoptions}}<option value="{{.Key}}">{{.Label}}</option>{{end}}
+    </select>
+    <select id="f-mine" data-filter="mine" aria-label="Whose">
+      <option value="">Everyone's</option>
+      <option value="yes">Only mine</option>
+    </select>
+  </div>
+  <div class="zoom" role="group" aria-label="Card size">
+    <button type="button" data-zoom="-1" aria-label="Smaller cards" title="Smaller"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12"/></svg></button>
+    <button type="button" data-zoom="1" aria-label="Larger cards" title="Larger"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12M12 6v12"/></svg></button>
+  </div>
+  <span class="count" id="lcount" data-total="{{.Count}}">{{.Count}} {{if eq .Count 1}}card{{else}}cards{{end}}</span>
+</div>
+
+<div class="wall" id="view-grid" role="tabpanel" aria-labelledby="tab-grid">
+  <aside class="lkey" aria-label="How to read the wall">
+    <h2>How to read it</h2>
+    <p class="lsum"><b>{{.Count}}</b> {{if eq .Count 1}}application{{else}}applications{{end}} across <b>{{len .Columns}}</b> {{if eq (len .Columns) 1}}capability{{else}}capabilities{{end}}, each where it serves. Larger cards matter more. Hover a logo for its name; open any card to see how to get it.</p>
+    <ul class="wkey">{{template "legend" .Legend}}<li class="planned"><i></i>Planned</li><li class="locked"><i></i>Not yours yet</li></ul>
+  </aside>
+{{range $col := .Columns}}
+  <section class="lcategory" id="map-{{$col.Category.Key}}" data-category="{{$col.Category.Key}}">
+    <h2 title="{{$col.Category.Description}}"><span class="pname">{{$col.Category.Name}}</span><span class="dim">{{$col.Count}}</span></h2>
+    <div class="lboxes">
+    {{range .Boxes}}
+      <div class="lbox" style="--span:{{.Span}};--fit:{{.Fit}}">
+        {{with .Name}}<h3>{{.}}</h3>{{end}}
+        <div class="lcells">
+        {{range $c := .Cards}}
+          {{$r := index $.Reach $c.App}}<button type="button" data-mine="{{if $r.Open}}yes{{end}}" class="lcard {{$c.Size}}{{if $c.Has "built"}} ours{{end}}{{if eq $c.Adoption "planned"}} planned{{end}}{{if and $r.Tile (not $r.Open)}} locked{{end}}" data-card="{{$c.Key}}" data-home="{{$col.Category.Key}}" data-origin="{{$c.KindKeys}}" data-kind="{{$c.Kind}}" data-adoption="{{$c.Adoption}}" data-search="{{$c.Title}} {{$c.Description}} {{$c.Category}} {{$c.Key}}" data-tip="{{$c.Label}}{{if and $c.Lifecycle (ne $c.Lifecycle "production") (ne $c.Adoption "planned")}}, {{$c.Lifecycle}}{{end}}{{if and $r.Tile (not $r.Open)}}, not yours yet{{end}}" style="--hue:{{hue $c.Key}}">
+            <span class="logo">{{with icon $c.Icon "light"}}<picture>{{with icon $c.Icon "dark"}}<source media="(prefers-color-scheme: dark)" srcset="{{.}}">{{end}}<img src="{{.}}" alt="" decoding="async" data-initial="{{initial $c.Title}}"></picture>{{else}}<span class="mono" aria-hidden="true">{{initial $c.Title}}</span>{{end}}{{if and $r.Tile (not $r.Open)}}<span class="lock" aria-hidden="true"><svg viewBox="0 0 16 16"><rect x="3.5" y="7" width="9" height="6.5" rx="1.5"/><path d="M5.5 7V5.5a2.5 2.5 0 0 1 5 0V7"/></svg></span>{{end}}</span>
+            {{template "marks" $c}}<span class="lname">{{$c.Title}}</span><span class="lkind">{{$c.Label}}</span>
+            <span class="lstatus {{$c.Status}}" data-pdot title="{{statusText $c.Status $c.Reasons}}">{{statusWord $c.Status}}</span>{{if and $r.Tile (not $r.Open)}}<span class="lreach{{if $r.Request}} can{{end}}">{{if $r.Request}}Request{{else}}Not yours{{end}}</span>{{end}}
+          </button>
+        {{end}}
+        </div>
+      </div>
+    {{else}}
+      <p class="dim nothing">Nothing here yet.</p>
+    {{end}}
+    </div>
+  </section>
+{{end}}
+</div>
+
+<div class="mwrap" id="view-list" role="tabpanel" aria-labelledby="tab-list" hidden>
+  <table class="matrix applist">
+    {{$owned := false}}{{range .Cards}}{{if .Team}}{{$owned = true}}{{end}}{{end}}
+    <thead><tr><th scope="col" class="corner">Application</th><th scope="col">Capability</th><th scope="col">Kind</th>{{if $owned}}<th scope="col">Owner</th>{{end}}<th scope="col">Yours</th></tr></thead>
+    <tbody>
+    {{range $c := .Cards}}{{$r := index $.Reach $c.App}}
+      <tr class="mrow" data-row="{{$c.Key}}" data-origin="{{$c.KindKeys}}" data-adoption="{{$c.Adoption}}" data-mine="{{if $r.Open}}yes{{end}}" data-search="{{$c.Title}} {{$c.Description}} {{$c.Category}} {{$c.Team}}">
+        <th scope="row"><button type="button" class="mlink" data-card="{{$c.Key}}" data-home="{{home $c.Categories}}" data-kind="{{$c.Kind}}"><span class="logo sm">{{with icon $c.Icon "light"}}<picture>{{with icon $c.Icon "dark"}}<source media="(prefers-color-scheme: dark)" srcset="{{.}}">{{end}}<img src="{{.}}" alt="" decoding="async" data-initial="{{initial $c.Title}}"></picture>{{else}}<span class="mono" aria-hidden="true">{{initial $c.Title}}</span>{{end}}</span>{{$c.Title}}</button></th>
+        <td>{{index $.Names (home $c.Categories)}}{{with $c.Category}}: {{.}}{{end}}</td><td class="layers">{{template "layers" $c.Layers}}</td>{{if $owned}}<td>{{with $c.Team}}{{.}}{{else}}<span class="dim">Not set</span>{{end}}</td>{{end}}
+        <td>{{if $r.Open}}<a href="/open/{{$r.Tile}}" target="_blank" rel="noopener">Open</a>{{else if not $r.Tile}}<span class="dim">No tile</span>{{else if $r.Request}}<a href="{{$r.Request}}" rel="noopener">Request access</a>{{else}}<span class="dim">No</span>{{end}}</td>
+      </tr>
+    {{end}}
+    </tbody>
+  </table>
+</div>
+<p class="empty" id="lno-match" hidden>Nothing matches that.</p>
+
+{{range .Details}}{{$c := .Card}}
+<dialog class="sheet detail" id="detail-{{$c.Key}}" aria-labelledby="detail-{{$c.Key}}-title" style="--hue:{{hue $c.Key}}">
+  <form method="dialog"><button class="close" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></form>
+  <header>
+    <span class="logo xl">{{with icon $c.Icon "light"}}<picture>{{with icon $c.Icon "dark"}}<source media="(prefers-color-scheme: dark)" srcset="{{.}}">{{end}}<img src="{{.}}" alt="" decoding="async" data-initial="{{initial $c.Title}}"></picture>{{else}}<span class="mono" aria-hidden="true">{{initial $c.Title}}</span>{{end}}</span>
+    <div>
+      <h2 id="detail-{{$c.Key}}-title">{{$c.Title}}</h2>
+      <p class="status"><span class="dot {{$c.Status}}"></span>{{statusText $c.Status $c.Reasons}}</p>
+    </div>
+  </header>
+  {{if $c.Description}}<p class="ddesc">{{$c.Description}}</p>{{end}}
+  {{$r := index $.Reach $c.App}}{{if $r.Tile}}
+  <div class="cta">{{if $r.Open}}<div class="links two"><a class="button" href="/open/{{$r.Tile}}" data-key="{{$r.Tile}}" data-category="{{home $c.Categories}}" target="_blank" rel="noopener">Open {{$c.Title}}</a><button type="button" class="button ghost" data-fav-key="{{$r.Tile}}" aria-pressed="false">Add to favorites</button></div>{{else if $r.Request}}<a class="button wide" href="{{$r.Request}}" rel="noopener">Request access</a><span class="dim">Not yours yet. Orrery sends the request to whoever grants it.</span>{{else if $r.Team}}<span class="ask">Not yours yet: ask {{$r.Team}}</span>{{else}}<span class="ask">Not yours to open</span>{{end}}</div>
+  {{end}}
+  <dl class="facts">
+    {{if .Categories}}<dt>Serves</dt><dd>{{range $i, $x := .Categories}}{{if $i}}, {{end}}{{$x.Name}}{{end}}{{with $c.Category}} · {{.}}{{end}}</dd>{{end}}
+    <dt>Kind</dt><dd class="layers">{{template "layers" $c.Layers}}</dd>
+    {{with $c.Tier}}<dt>Tier</dt><dd class="cap">{{.}}</dd>{{end}}
+    <dt>Owner</dt><dd>{{with $c.Team}}{{.}}{{else}}<span class="dim">Not set</span>{{end}}</dd>
+    <dt>Adoption</dt><dd>{{adoptionLabel $c.Adoption}}{{if and $c.Lifecycle (ne $c.Adoption "planned")}}, {{$c.Lifecycle}}{{end}}</dd>
+    {{if and $c.App $c.URL}}<dt>Address</dt><dd>{{host $c.URL}}</dd>{{end}}
+  </dl>
+  {{with actionsOf $.Actions $c.Title}}<h3>Things you can do</h3><ul class="mini">{{range .}}<li><a href="{{.URL}}" data-action><span class="aicon" aria-hidden="true"><span class="logo">{{with icon $c.Icon "light"}}<img src="{{.}}" alt="" decoding="async">{{else}}<span class="mono">{{initial $c.Title}}</span>{{end}}</span><span class="bolt"><svg viewBox="0 0 24 24"><path d="M13 3.5 5.5 13.5h6l-1 7 7.5-10h-6z"/></svg></span></span><span class="mtitle">{{.Title}}</span></a></li>{{end}}</ul>{{end}}
+  {{if or $c.Orrery (and (not $c.App) $c.URL)}}
+  <p class="links">{{if and (not $c.App) $c.URL}}<a href="{{$c.URL}}" rel="noopener">{{if eq $c.Kind "saas"}}API address{{else}}Repository{{end}}</a>{{end}}{{if $c.Orrery}}<a href="{{$c.Orrery}}" rel="noopener">See it in Orrery</a>{{end}}</p>
+  {{end}}
+  {{if .Provides}}
+  <h3>Provides</h3>
+  <ul class="flows">{{range .Provides}}<li class="flow"><span class="peer">{{.Title}}</span></li>{{end}}</ul>
+  {{end}}
+  {{with $c.BuiltFrom}}<h3>Runs</h3><ul class="flows">{{range .}}<li class="flow"><span class="peer">{{.Title}}</span>{{with .Repo}}<a class="carries" href="{{.}}" rel="noopener">Repository</a>{{end}}</li>{{end}}</ul>{{end}}
+  {{if not $c.App}}
+  <h3>Consumes</h3>
+  <ul class="flows">
+  {{range .Consumes}}<li class="flow live"><span class="peer">{{.API}}</span><span class="carries">{{if .Provider}}from {{.Provider}}{{else}}outside{{end}}</span></li>
+  {{else}}<li class="dim">Calls nothing on the landscape.</li>{{end}}
+  </ul>
+  {{if .WillConsume}}
+  <h3>Will consume</h3>
+  <ul class="flows">{{range .WillConsume}}<li class="flow wanted"><span class="peer">{{.API}}</span><span class="carries">{{if .Provider}}from {{.Provider}}{{else}}outside{{end}}</span><span class="chip state">{{stateLabel .Edge.State}}</span></li>{{end}}</ul>
+  {{end}}
+  <h3>Consumed by</h3>
+  <ul class="flows">
+  {{range .ConsumedBy}}<li class="flow {{.Edge.State}}"><span class="peer">{{.Consumer}}</span><span class="carries">{{.API}}</span><span class="chip state">{{stateLabel .Edge.State}}</span></li>
+  {{else}}<li class="dim">Nobody on the landscape calls it.</li>{{end}}
+  </ul>
+  {{end}}
+</dialog>
+{{end}}
+{{else if not .Catalog.Error}}
+<p class="empty">No applications yet. An application shows here once an admin adds it to My Apps.</p>
+{{end}}
+{{end}}

@@ -1,0 +1,109 @@
+{{define "content"}}
+{{if .Catalog.Error}}
+<div class="banner" role="status" id="catalog-banner">
+  <strong>Catalog unreachable.</strong>
+  {{if .Catalog.Fetched}}Showing the apps as they were at {{template "clock" .Catalog.Fetched}}. Status may be out of date.{{else}}No apps to show yet. This page tries again every half minute.{{end}}
+</div>
+{{else}}
+<div class="banner" role="status" id="catalog-banner" hidden><strong>Catalog unreachable.</strong> Showing the last apps read. Status may be out of date.</div>
+{{end}}
+<section class="launch" aria-labelledby="launch-title">
+  <h1 id="launch-title" data-greet>{{.Org}}</h1>
+  <div class="lwrap">
+  <div class="lfield">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg>
+    <input type="search" id="search" placeholder="Open an app{{if .Actions}} or run an action{{end}}" autocomplete="off" spellcheck="false" aria-label="Search your apps" role="combobox" aria-expanded="false" aria-controls="launch-list" aria-autocomplete="list">
+    <span class="count" id="count">{{.Count}} {{if eq .Count 1}}app{{else}}apps{{end}}</span>
+  </div>
+  <ul class="llist" id="launch-list" role="listbox" aria-label="Best matches" hidden></ul>
+  </div>
+  {{if .Count}}
+  <div class="dock" id="dock" aria-label="Favorites and recent" hidden>
+    <div class="dtray">
+      <div class="dgroup" data-dgroup="fav" hidden><h2 class="dlabel" data-dlabel>Favorites</h2><div class="dtiles" data-dock="fav"></div></div>
+      <div class="dgroup" data-dgroup="recent" hidden><h2 class="dlabel">Recent</h2><div class="dtiles" data-dock="recent"></div></div>
+    </div>
+    <p class="dhint" data-dock-hint hidden>Your important apps. Star any app to keep it here.</p>
+  </div>
+  {{end}}
+</section>
+{{if .Count}}
+<div class="mmtop"><h2 class="mmtitle">By capability</h2><span class="mmlinks"><a class="mmall" href="#hidden-apps" data-hidden-link hidden></a><a class="mmall" href="/landscape">The whole Landscape <span aria-hidden="true">→</span></a></span></div>
+<nav class="minimap" aria-label="Your apps by capability">
+  {{range $g := .Groups}}{{if .Apps}}<a class="mm" href="#cat-{{.Category.Key}}" style="--n:{{len .Apps}}"><span class="mmhead"><span class="mmname">{{.Category.Name}}</span><span class="mmn">{{len .Apps}}</span></span>{{with subGroupsOf $g $.Caps}}<span class="mmsubs">{{range .}}<span class="mmsub">{{with .Category.Name}}<span class="mmsname">{{.}}</span>{{end}}<span class="mmlogos">{{range .Apps}}{{template "minilogo" .}}{{end}}</span></span>{{end}}</span>{{else}}<span class="mmlogos">{{range .Apps}}{{template "minilogo" .}}{{end}}</span>{{end}}</a>{{end}}{{end}}
+</nav>
+<div class="categories">
+{{range $g := .Groups}}{{if .Apps}}
+<section class="category" data-category="{{.Category.Key}}" aria-labelledby="cat-{{.Category.Key}}">
+  <h2 id="cat-{{.Category.Key}}" title="{{.Category.Description}}">{{.Category.Name}}<span class="dim">{{len .Apps}}</span></h2>
+  <div class="grid">
+  {{with subGroupsOf $g $.Caps}}{{range .}}{{if .Category.Key}}<h3 class="subcap">{{.Category.Name}}<span class="dim">{{len .Apps}}</span></h3>{{end}}{{range $a := .Apps}}{{template "tile" (tileOf $g $a $)}}{{end}}{{end}}{{else}}{{range $a := .Apps}}{{template "tile" (tileOf $g $a $)}}{{end}}{{end}}
+  </div>
+</section>
+{{end}}{{end}}
+{{if .Actions}}
+<section class="category acts" data-category="actions" aria-labelledby="cat-actions">
+  <h2 id="cat-actions">Things you can do<span class="dim">{{len .Actions}}</span></h2>
+  <p class="sub">Self-service in Orrery. Each opens its form there; Orrery runs it and keeps the record.</p>
+  <div class="actions{{if gt (len .Actions) 4}} folded{{end}}" id="actions">
+  {{range .Actions}}
+    <div class="tile action" data-search="{{.Title}} {{.Description}} {{.Group}}" data-group="{{.Group}}">
+      <a class="alnk" href="{{.URL}}" data-action title="{{actionTip .Title .Description .Group .Approval}}">
+        <span class="aicon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13 3.5 5.5 13.5h6l-1 7 7.5-10h-6z"/></svg></span>
+        <span class="atext"><span class="atitle">{{.Title}}</span><span class="ameta">{{with .Group}}{{.}}{{else}}Self-service{{end}}{{if .Approval}}<span class="warn">Needs approval</span>{{end}}</span></span>
+      </a>
+    </div>
+  {{end}}
+  </div>
+  {{if gt (len .Actions) 4}}<button type="button" class="more-acts" data-unfold="actions">Show {{add (len .Actions) -4}} more</button>{{end}}
+</section>
+{{end}}
+</div>
+<details class="hidden-apps" id="hidden-apps" hidden>
+  <summary><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12S6.6 6.5 12 6.5 20.5 12 20.5 12 17.4 17.5 12 17.5 3.5 12 3.5 12z"/><circle cx="12" cy="12" r="2.6"/><path d="M4.5 4.5l15 15"/></svg><span>Hidden apps</span><span class="dim" data-hidden-count></span></summary>
+  <p class="sub">You hid these from Home. Search still finds them. Restore one to bring it back.</p>
+  <ul class="hlist" data-hidden-list></ul>
+  <button type="button" class="button ghost small" data-restore-all hidden>Restore all</button>
+</details>
+<div class="toast" id="toast" role="status" hidden><span data-toast-text></span><button type="button" class="tlinkbtn" data-toast-undo>Undo</button></div>
+
+<dialog class="sheet tmenu" id="tile-menu" aria-labelledby="tile-menu-title">
+  <form method="dialog"><button class="close" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></form>
+  <header>
+    <span class="logo xl" data-m="logo" aria-hidden="true"></span>
+    <div>
+      <h2 id="tile-menu-title" data-m="title"></h2>
+      <p class="status"><span class="dot" data-m="dot"></span><span data-m="status"></span></p>
+    </div>
+  </header>
+  <p class="ddesc" data-m="desc"></p>
+  <p class="links"><a class="button" data-m="open" href="/" target="_blank" rel="noopener">Open</a><button type="button" class="button ghost" data-m="fav" aria-pressed="false">Add to favorites</button></p>
+  <p class="links minor"><button type="button" class="button ghost small" data-m="hide">Hide from Home</button><button type="button" class="button ghost small" data-m="unrecent" hidden>Remove from recent</button></p>
+  <dl class="facts">
+    <dt>Serves</dt><dd data-m="capname"></dd>
+    <dt data-m="kind-l">Kind</dt><dd class="layers"><span class="layer"><span data-m="kmark">{{range $k := hostingKeys}}<span class="kmark kind-{{$k}}" data-k="{{$k}}" hidden>{{template "glyph" $k}}</span>{{end}}</span><span data-m="kind"></span></span></dd>
+    <dt data-m="tier-l">Tier</dt><dd class="cap" data-m="tier"></dd>
+    <dt>Owner</dt><dd data-m="owner"></dd>
+    <dt>Adoption</dt><dd>In use</dd>
+    <dt>Address</dt><dd data-m="host"></dd>
+  </dl>
+  <div data-m="acts" hidden><h3>Things you can do</h3><ul class="mini" data-m="actlist"></ul></div>
+  <p class="links" data-m="orrery-p" hidden><a data-m="orrery" href="/" rel="noopener">See it in Orrery</a></p>
+</dialog>
+{{else if not .Catalog.Error}}
+<p class="empty">There are no apps for you yet. An app shows here once an admin adds it and you may open it. The <a href="/landscape">Landscape</a> lists every app the organization offers.</p>
+{{end}}
+{{end}}
+
+{{define "tile"}}{{$a := .A}}{{$g := .G}}{{$p := .P}}{{with $a}}
+    <div class="tile" data-tile="{{.Key}}" data-search="{{.Title}} {{.Description}} {{.Key}} {{.Owner}} {{.Tier}}" data-title="{{.Title}}" data-desc="{{.Description}}" data-tier="{{.Tier}}" data-owner="{{.Owner}}" data-host="{{host .URL}}" data-kind="{{hostingWord .Hosting}}" data-kindkey="{{.Hosting}}" data-capname="{{servesOf $g.Category.Name $p.CapNames .Capabilities}}" data-orrery="{{appPage $p.Hub .Key}}"{{if featured .Tier}} data-featured{{end}} style="--hue:{{hue .Key}}">
+      <a class="tlink" href="/open/{{.Key}}" data-key="{{.Key}}" data-category="{{$g.Category.Key}}" title="{{tileTip .Title .Description .Tier .Owner}}" target="_blank" rel="noopener">
+        <span class="logo">{{with icon .Icon "light"}}<picture>{{with icon $a.Icon "dark"}}<source media="(prefers-color-scheme: dark)" srcset="{{.}}">{{end}}<img src="{{.}}" alt="" width="44" height="44" decoding="async" data-initial="{{initial $a.Title}}"></picture>{{else}}<span class="mono" aria-hidden="true">{{initial $a.Title}}</span>{{end}}</span>
+        <span class="ttext"><span class="nline"><span class="name">{{.Title}}</span><span class="badge {{.Status}}" data-dot title="{{statusText .Status .Reasons}}">{{statusWord .Status}}</span></span>{{with .Description}}<span class="desc">{{.}}</span>{{end}}</span>
+      </a>
+      <button type="button" class="tbtn fav" data-fav aria-pressed="false" aria-label="Add {{.Title}} to favorites" title="Favorite"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3.6 2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/></svg></button>
+      <button type="button" class="tbtn more" data-more aria-haspopup="dialog" aria-label="More about {{.Title}}" title="More"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5.5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="18.5" cy="12" r="1.6"/></svg></button>
+    </div>
+{{end}}{{end}}
+
+{{define "minilogo"}}<span class="logo mini" data-key="{{.Key}}" style="--hue:{{hue .Key}}" title="{{.Title}}">{{with icon .Icon "light"}}<picture>{{with icon $.Icon "dark"}}<source media="(prefers-color-scheme: dark)" srcset="{{.}}">{{end}}<img src="{{.}}" alt="" decoding="async" data-initial="{{initial $.Title}}"></picture>{{else}}<span class="mono" aria-hidden="true">{{initial .Title}}</span>{{end}}</span>{{end}}

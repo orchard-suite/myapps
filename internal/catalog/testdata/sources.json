@@ -1,0 +1,19 @@
+{"sources": [
+  {"id": "atlas", "title": "Atlas", "class": "pusher", "actsFor": "sw_service:git/example/atlas",
+   "writes": {"entities": [{"blueprint": "inv_thing", "count": 40, "lastAt": "2026-11-01T10:00:00Z"}],
+              "blueprints": [{"id": "inv_thing", "lastAt": "2026-11-01T09:00:00Z"}],
+              "actions": [{"id": "atlas.sync", "lastAt": "2026-11-01T08:00:00Z"}]}},
+  {"id": "atlas-feed", "title": "Atlas feed", "class": "pusher", "actsFor": "sw_service:git/example/atlas",
+   "writes": {"entities": [{"blueprint": "inv_host", "count": 7, "lastAt": "2026-11-01T10:00:00Z"},
+                           {"blueprint": "inv_thing", "count": 2, "lastAt": "2026-11-01T10:00:00Z"}],
+              "blueprints": [], "actions": []}},
+  {"id": "ember", "title": "Ember", "class": "pusher", "actsFor": "sw_service:git/example/ember",
+   "writes": {"entities": [], "blueprints": [], "actions": []}},
+  {"id": "comet-hook", "title": "Comet hook", "class": "event", "actsFor": "sw_api:comet",
+   "writes": {"entities": [{"blueprint": "sw_service", "count": 1, "lastAt": "2026-11-01T10:00:00Z"},
+                           {"blueprint": "billing_line", "count": 9, "lastAt": "2026-11-01T10:00:00Z"}],
+              "blueprints": [], "actions": []}},
+  {"id": "lab", "title": "The lab", "class": "git",
+   "writes": {"entities": [{"blueprint": "inv_thing", "count": 1, "lastAt": "2026-11-01T10:00:00Z"}],
+              "blueprints": [{"id": "inv_thing", "lastAt": "2026-11-01T09:00:00Z"}], "actions": [{"id": "lab.reboot", "lastAt": "2026-11-01T08:00:00Z"}]}}
+]}

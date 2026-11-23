@@ -1,0 +1,517 @@
+{
+ "entra_app": [
+  {
+   "blueprint": "entra_app",
+   "key": "tenant-1/app-wiki",
+   "title": "Team Wiki",
+   "icon": "entra_appwiki",
+   "state": "active",
+   "fields": {
+    "app_id": "app-wiki",
+    "assignment_required": false,
+    "launch_url": "https://wiki.example.com",
+    "sign_in": "oidc",
+    "publisher": "tenant",
+    "portal": "https://entra.example.com/wiki"
+   },
+   "relations": {},
+   "status": {
+    "level": "green"
+   }
+  },
+  {
+   "blueprint": "entra_app",
+   "key": "tenant-1/app-payroll",
+   "title": "Payroll",
+   "state": "active",
+   "fields": {
+    "app_id": "app-payroll",
+    "assignment_required": true,
+    "launch_url": "https://payroll.example.com",
+    "sign_in": "saml",
+    "publisher": "gallery",
+    "roles": [
+     "default",
+     "Payroll.Admin"
+    ],
+    "role_titles": [
+     "Default access",
+     "Payroll admin"
+    ]
+   },
+   "relations": {}
+  },
+  {
+   "blueprint": "entra_app",
+   "key": "tenant-1/app-crm",
+   "title": "CRM",
+   "state": "active",
+   "fields": {
+    "app_id": "app-crm",
+    "assignment_required": true,
+    "launch_url": "https://crm.example.com",
+    "roles": [
+     "default",
+     "Crm.Admin"
+    ],
+    "role_titles": [
+     "Default access",
+     "CRM admin"
+    ]
+   }
+  },
+  {
+   "blueprint": "entra_app",
+   "key": "tenant-1/app-old",
+   "title": "Old Tool",
+   "state": "active",
+   "fields": {
+    "app_id": "app-old",
+    "assignment_required": false,
+    "launch_url": "https://old.example.com"
+   }
+  },
+  {
+   "blueprint": "entra_app",
+   "key": "tenant-1/app-portal",
+   "title": "Portal sign-in",
+   "state": "active",
+   "fields": {
+    "app_id": "app-portal",
+    "assignment_required": true,
+    "launch_url": "https://portal.example.com"
+   },
+   "relations": {}
+  },
+  {
+   "blueprint": "entra_app",
+   "key": "tenant-1/app-gone",
+   "title": "Gone",
+   "state": "missing",
+   "fields": {
+    "app_id": "app-gone",
+    "assignment_required": false,
+    "launch_url": "https://gone.example.com"
+   }
+  },
+  {
+   "blueprint": "entra_app",
+   "key": "tenant-1/app-nourl",
+   "title": "No Address",
+   "state": "active",
+   "fields": {
+    "app_id": "app-nourl"
+   }
+  }
+ ],
+ "sw_workload": [
+  {
+   "blueprint": "sw_workload",
+   "key": "portal",
+   "title": "Portal",
+   "state": "active",
+   "fields": {
+    "url": "https://portal.example.com",
+    "description": "The door."
+   },
+   "relations": {},
+   "status": {
+    "level": "green"
+   }
+  },
+  {
+   "blueprint": "sw_workload",
+   "key": "lab",
+   "title": "Lab",
+   "state": "active",
+   "fields": {
+    "url": "https://lab.example.com",
+    "audience": [
+     "Platform"
+    ]
+   }
+  }
+ ],
+ "entra_user": [
+  {
+   "blueprint": "entra_user",
+   "key": "tenant-1/u-fin",
+   "title": "A finance person",
+   "fields": {
+    "email": "finance@example.com",
+    "enabled": true
+   }
+  },
+  {
+   "blueprint": "entra_user",
+   "key": "tenant-1/u-staff",
+   "title": "A staff member",
+   "fields": {
+    "email": "staff@example.com",
+    "enabled": true
+   }
+  },
+  {
+   "blueprint": "entra_user",
+   "key": "tenant-1/u-off",
+   "title": "Someone who left",
+   "fields": {
+    "email": "left@example.com",
+    "enabled": false
+   }
+  }
+ ],
+ "entra_group": [
+  {
+   "blueprint": "entra_group",
+   "key": "tenant-1/g-finance",
+   "title": "Finance",
+   "relations": {
+    "members": [
+     {
+      "key": "tenant-1/u-fin"
+     },
+     {
+      "key": "tenant-1/u-off"
+     }
+    ]
+   }
+  },
+  {
+   "blueprint": "entra_group",
+   "key": "tenant-1/g-staff",
+   "title": "Staff",
+   "fields": {
+    "dynamic": true
+   },
+   "relations": {
+    "members": [
+     {
+      "key": "tenant-1/u-staff"
+     }
+    ]
+   }
+  }
+ ],
+ "entra_app_role_assignment": [
+  {
+   "blueprint": "entra_app_role_assignment",
+   "key": "tenant-1/a1",
+   "fields": {
+    "role": "default",
+    "principal_type": "group"
+   },
+   "relations": {
+    "app": [
+     {
+      "key": "tenant-1/app-payroll"
+     }
+    ],
+    "group": [
+     {
+      "key": "tenant-1/g-finance"
+     }
+    ]
+   }
+  },
+  {
+   "blueprint": "entra_app_role_assignment",
+   "key": "tenant-1/a2",
+   "fields": {
+    "role": "default",
+    "principal_type": "group"
+   },
+   "relations": {
+    "app": [
+     {
+      "key": "tenant-1/app-portal"
+     }
+    ],
+    "group": [
+     {
+      "key": "tenant-1/g-staff"
+     }
+    ]
+   }
+  },
+  {
+   "blueprint": "entra_app_role_assignment",
+   "key": "tenant-1/a3",
+   "fields": {
+    "role": "default",
+    "principal_type": "user"
+   },
+   "relations": {
+    "app": [
+     {
+      "key": "tenant-1/app-crm"
+     }
+    ],
+    "user": [
+     {
+      "key": "tenant-1/u-staff"
+     }
+    ]
+   }
+  }
+ ],
+ "it_application": [
+  {
+   "blueprint": "it_application",
+   "key": "front",
+   "title": "Front Door",
+   "state": "active",
+   "fields": {
+    "url": "https://front.example.com",
+    "hosting": "self_hosted",
+    "listed": "no_login",
+    "access": "open"
+   },
+   "relations": {
+    "business_capabilities": [
+     {
+      "key": "everyday"
+     }
+    ]
+   }
+  },
+  {
+   "blueprint": "it_application",
+   "key": "wiki",
+   "title": "Wiki",
+   "icon": "wiki",
+   "state": "active",
+   "fields": {
+    "description": "Where the team writes things down.",
+    "hosting": "saas",
+    "listed": "shown",
+    "access": "open"
+   },
+   "relations": {
+    "sign_in": [
+     {
+      "key": "tenant-1/app-wiki"
+     }
+    ],
+    "business_capabilities": [
+     {
+      "key": "everyday"
+     }
+    ],
+    "team": [
+     {
+      "key": "it",
+      "title": "IT Operations"
+     }
+    ]
+   },
+   "status": {
+    "level": "green"
+   }
+  },
+  {
+   "blueprint": "it_application",
+   "key": "payroll",
+   "title": "Payroll",
+   "state": "active",
+   "fields": {
+    "hosting": "saas",
+    "listed": "shown",
+    "access": "group"
+   },
+   "relations": {
+    "sign_in": [
+     {
+      "key": "tenant-1/app-payroll"
+     }
+    ],
+    "access_groups": [
+     {
+      "key": "tenant-1/g-finance"
+     }
+    ],
+    "business_capabilities": [
+     {
+      "key": "finance-payroll"
+     }
+    ]
+   }
+  },
+  {
+   "blueprint": "it_application",
+   "key": "portal",
+   "title": "Portal",
+   "state": "active",
+   "fields": {
+    "url": "https://portal.example.com",
+    "hosting": "self_hosted",
+    "listed": "shown",
+    "access": "group",
+    "tier": "critical"
+   },
+   "relations": {
+    "workload": [
+     {
+      "key": "portal"
+     }
+    ],
+    "sign_in": [
+     {
+      "key": "tenant-1/app-portal"
+     }
+    ],
+    "services": [
+     {
+      "key": "git/example/atlas"
+     }
+    ],
+    "business_capabilities": [
+     {
+      "key": "everyday"
+     }
+    ],
+    "pillars": [
+     {
+      "key": "catalog"
+     }
+    ]
+   }
+  },
+  {
+   "blueprint": "it_application",
+   "key": "lab",
+   "title": "Lab",
+   "state": "active",
+   "fields": {
+    "url": "https://lab.example.com",
+    "hosting": "self_hosted",
+    "self_built": true,
+    "listed": "shown",
+    "audience": [
+     "Platform"
+    ]
+   },
+   "relations": {
+    "workload": [
+     {
+      "key": "lab"
+     }
+    ]
+   }
+  },
+  {
+   "blueprint": "it_application",
+   "key": "old",
+   "title": "Old Tool",
+   "state": "active",
+   "fields": {
+    "url": "https://old.example.com",
+    "hosting": "installed",
+    "listed": "hidden"
+   },
+   "relations": {
+    "sign_in": [
+     {
+      "key": "tenant-1/app-old"
+     }
+    ]
+   }
+  }
+ ],
+ "business_capability": [
+  {
+   "blueprint": "capability",
+   "key": "everyday",
+   "title": "Everyday tools",
+   "fields": {
+    "order": 1
+   }
+  },
+  {
+   "blueprint": "capability",
+   "key": "finance",
+   "title": "Finance",
+   "fields": {
+    "order": 2
+   }
+  },
+  {
+   "blueprint": "capability",
+   "key": "finance-payroll",
+   "title": "Payroll",
+   "fields": {
+    "order": 1
+   },
+   "relations": {
+    "parent": [
+     {
+      "key": "finance"
+     }
+    ]
+   }
+  },
+  {
+   "blueprint": "capability",
+   "key": "sales",
+   "title": "Sales",
+   "fields": {
+    "order": 3
+   }
+  }
+ ],
+ "sw_service": [
+  {
+   "blueprint": "sw_service",
+   "key": "git/example/beacon",
+   "title": "Beacon",
+   "icon": "beacon",
+   "state": "active",
+   "fields": {
+    "origin": "adopted",
+    "description": "Alerts, run as it ships."
+   },
+   "relations": {
+    "pillars": [
+     {
+      "key": "catalog"
+     }
+    ]
+   }
+  }
+ ],
+ "sw_api": [
+  {
+   "blueprint": "sw_api",
+   "key": "nimbus",
+   "title": "Nimbus",
+   "state": "active",
+   "fields": {
+    "external": true,
+    "description": "Tickets, on someone else's platform."
+   },
+   "relations": {
+    "pillars": [
+     {
+      "key": "product"
+     }
+    ]
+   }
+  },
+  {
+   "blueprint": "sw_api",
+   "key": "git/example/atlas/catalog",
+   "title": "Atlas catalog API",
+   "state": "active",
+   "fields": {
+    "external": false
+   },
+   "relations": {
+    "service": [
+     {
+      "key": "git/example/atlas"
+     }
+    ]
+   }
+  }
+ ]
+}
