@@ -97,7 +97,7 @@ https://github.com/orchard-suite/hedge/blob/main/docs/fixtures.md.
   (`door`, `faro`, `orrery`, `telemetry`). A person's groups are
   `door.From(ctx).Roles`.
 - `orrery.yaml` at the root is what this repository builds. The app never
-  reads or writes it: redgreen reads it from the repository and writes the
+  reads or writes it: Muster reads it from the repository and writes the
   service for the estate that reads this repository.
 - `ORRERY_PUSH_TOKEN`, with `ORRERY_URL`, offers `CurationBlueprints` at
   start and writes what admins decide, all of it My Apps' own entities:
