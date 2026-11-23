@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.0](https://github.com/orchard-suite/myapps/compare/v0.0.48...v1.0.0) (2026-11-23)
+
+### ⚠ BREAKING CHANGES
+
+* **myapps:** open the source in orchard ([8b5f1b9](https://github.com/orchard-suite/myapps/commit/8b5f1b9a56509baec99afff1b58a32073fca9ccf))
+
+### Features
+
+* **myapps:** open the source in orchard ([8b5f1b9](https://github.com/orchard-suite/myapps/commit/8b5f1b9a56509baec99afff1b58a32073fca9ccf))
+
 ## 0.0.48 (2026-11-22)
 
 ### Bug Fixes
