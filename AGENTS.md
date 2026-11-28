@@ -202,8 +202,9 @@ Agents push to main.
 
 Commit with conventional commits scoped `myapps` (`feat(myapps): ...`,
 `fix(myapps): ...`) and land with `make land` (`make land BRANCH=<branch>`
-from a worktree). It runs `make check`, then `release-damnit land`. CI runs
-the same check on every push and pull request (`test.yml`); the release
+from a worktree). `release-damnit land` runs the config's check, `make
+check`, on the tree that lands and signs a landing proof the release
+verifies. CI runs the same check on every push and pull request (`test.yml`); the release
 calls it first, then versions every `feat` and `fix`, tags it, and builds
 and signs `ghcr.io/orchard-suite/myapps:<version>` for `linux/amd64`.
 
@@ -213,7 +214,7 @@ and signs `ghcr.io/orchard-suite/myapps:<version>` for `linux/amd64`.
 make check
 ```
 
-Run it before every commit; `make land` runs it too, and CI runs it on
+Run it before every commit; `make land` runs it too and signs its proof, and CI runs it on
 every push. It needs Go (see `go.mod`). To see it against a
 real catalog, `make build` and run `dist/myapps` with `ORRERY_URL` and
 `ORRERY_TOKEN` set, then call it with the front door's headers as the
